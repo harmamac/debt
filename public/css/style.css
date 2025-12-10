@@ -1479,9 +1479,15 @@ body {
 }
 
 /* ===== Two Column Grid ===== */
-.two-column-grid {
+/* .two-column-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+} */
+ /* ===== Dynamic Column Grid (supports 1, 2, or 3 columns) ===== */
+.two-column-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--space-5);
 }
 

@@ -58,7 +58,11 @@
                         </svg>
                     </div>
                     <h1 class="main-title">
-                        <span class="title-text">تتبع الديون والمصاريف</span>
+                        @if($profile->store_name)
+                            <span class="title-text">{{ $profile->store_name }}</span>
+                        @else
+                            <span class="title-text">تتبع الديون والمصاريف</span>
+                        @endif
                         <span class="title-glow"></span>
                     </h1>
                     <a href="{{ route('logout') }}" class="logout-btn" style="position: absolute; top: 1rem; left: 1rem; background: #ef4444; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-weight: bold;">
@@ -66,8 +70,161 @@
 </a>
                 </div>
                 
+
                 <!-- Summary Cards Grid -->
-                <div class="summary-grid">
+<div class="summary-grid">
+    <!-- Owed By Me Card (Red) -->
+    <div class="summary-card card-owed-by-me">
+        <div class="card-icon-wrapper card-icon-red">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+            </svg>
+        </div>
+        <div class="card-content">
+            <div class="summary-label">أنا مدين لهم</div>
+            <div class="currency-row">
+                @foreach($enabledCurrencies as $currency)
+                    @php
+                        $currencyInfo = [
+                            'RUB' => '₽',
+                            'USDT' => 'USDT',
+                            'LYD' => 'LD'
+                        ];
+                        $symbol = $currencyInfo[$currency] ?? $currency;
+                    @endphp
+                    <div class="currency-amount">
+                        <span class="currency-symbol {{ $currency == 'USDT' ? 'usdt' : '' }}">{{ $symbol }}</span>
+                        <span class="summary-amount">{{ number_format($totalOwedByMe[$currency], 2) }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        <div class="card-shine"></div>
+    </div>
+    
+    <!-- Owed To Me Card (Green) -->
+    <div class="summary-card card-owed-to-me">
+        <div class="card-icon-wrapper card-icon-green">
+            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+        </div>
+        <div class="card-content">
+            <div class="summary-label">مدينين لي</div>
+            <div class="currency-row">
+                @foreach($enabledCurrencies as $currency)
+                    @php
+                        $currencyInfo = [
+                            'RUB' => '₽',
+                            'USDT' => 'USDT',
+                            'LYD' => 'LD'
+                        ];
+                        $symbol = $currencyInfo[$currency] ?? $currency;
+                    @endphp
+                    <div class="currency-amount">
+                        <span class="currency-symbol {{ $currency == 'USDT' ? 'usdt' : '' }}">{{ $symbol }}</span>
+                        <span class="summary-amount">{{ number_format($totalOwedToMe[$currency], 2) }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        <div class="card-shine"></div>
+    </div>
+</div>
+
+<!-- Balance Cards -->
+<div class="summary-grid">
+    @foreach($enabledCurrencies as $currency)
+        @php
+            $currencyInfo = [
+                'RUB' => '₽',
+                'USDT' => 'USDT',
+                'LYD' => 'LD'
+            ];
+            $symbol = $currencyInfo[$currency] ?? $currency;
+            $balance = $debtBalance[$currency];
+        @endphp
+        <div class="summary-card @if($balance > 0) card-owed-to-me @elseif($balance < 0) card-owed-by-me @else card-expenses @endif">
+            <div class="card-icon-wrapper @if($balance > 0) card-icon-green @elseif($balance < 0) card-icon-red @else card-icon-gray @endif">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+            </div>
+            <div class="card-content">
+                <div class="summary-label">الرصيد {{ $symbol }}</div>
+                <div class="summary-amount @if($balance > 0) amount-positive @elseif($balance < 0) amount-negative @else amount-neutral @endif">
+                    {{ $balance > 0 ? '+' : '' }}{{ number_format($balance, 2) }}
+                </div>
+                <div class="balance-status-mini @if($balance > 0) status-positive @elseif($balance < 0) status-negative @else status-neutral @endif">
+                    <span class="status-indicator"></span>
+                    @if($balance > 0) لك @elseif($balance < 0) عليك @else متعادل @endif
+                </div>
+            </div>
+            <div class="card-shine"></div>
+        </div>
+    @endforeach
+</div>
+
+<!-- Safekeeping Cards -->
+<div class="summary-grid">
+    @foreach($enabledCurrencies as $currency)
+        @php
+            $currencyInfo = [
+                'RUB' => '₽',
+                'USDT' => 'USDT',
+                'LYD' => 'LD'
+            ];
+            $symbol = $currencyInfo[$currency] ?? $currency;
+        @endphp
+        <div class="summary-card card-safekeeping">
+            <div class="card-icon-wrapper card-icon-blue">
+                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                </svg>
+            </div>
+            <div class="card-content">
+                <div class="summary-label">الأمانات {{ $symbol }}</div>
+                <div class="summary-amount">{{ number_format($totalSafekeeping[$currency], 2) }}</div>
+            </div>
+            <div class="card-shine"></div>
+        </div>
+    @endforeach
+</div>
+
+<!-- Expenses Card -->
+<div class="summary-card card-expenses">
+    <div class="card-icon-wrapper card-icon-gray">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+    </div>
+    <div class="card-content">
+        <div class="summary-label">إجمالي المصاريف</div>
+        <div class="currency-row">
+            @foreach($enabledCurrencies as $currency)
+                @php
+                    $currencyInfo = [
+                        'RUB' => '₽',
+                        'USDT' => 'USDT',
+                        'LYD' => 'LD'
+                    ];
+                    $symbol = $currencyInfo[$currency] ?? $currency;
+                @endphp
+                <div class="currency-amount">
+                    <span class="currency-symbol {{ $currency == 'USDT' ? 'usdt' : '' }}">{{ $symbol }}</span>
+                    <span class="summary-amount">{{ number_format($totalExpenses[$currency], 2) }}</span>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    <div class="card-shine"></div>
+</div>
+                <!-- Summary Cards Grid -->
+                {{-- <div class="summary-grid">
                     <!-- Owed By Me Card (Red) -->
                     <div class="summary-card card-owed-by-me">
                         <div class="card-icon-wrapper card-icon-red">
@@ -113,177 +270,114 @@
                         </div>
                         <div class="card-shine"></div>
                     </div>
-                </div>
-{{-- <div class="balance-card balance-neutral">
-    <div class="balance-icon-wrapper">
-        <svg class="balance-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 6v6l4 2"/>
-        </svg>
-    </div>
-    <div class="balance-content">
-        <div class="balance-header">
-            <span class="balance-label">الرصيد الكلي للديون</span>
-        </div>
-        <div class="currency-row">
-            <div class="currency-amount">
-                <span class="currency-symbol">₽</span>
-                <span class="balance-amount @if($debtBalanceRUB > 0) amount-positive @elseif($debtBalanceRUB < 0) amount-negative @else amount-neutral @endif">
-                    {{ $debtBalanceRUB > 0 ? '+' : '' }}{{ number_format($debtBalanceRUB, 2) }}
-                </span>
-            </div>
-            <div class="currency-amount">
-                <span class="currency-symbol usdt">USDT</span>
-                <span class="balance-amount @if($debtBalanceUSDT > 0) amount-positive @elseif($debtBalanceUSDT < 0) amount-negative @else amount-neutral @endif">
-                    {{ $debtBalanceUSDT > 0 ? '+' : '' }}{{ number_format($debtBalanceUSDT, 2) }}
-                </span>
-            </div>
-        </div>
-        <div class="balance-status-row">
-            <span class="status-item @if($debtBalanceRUB > 0) status-positive @elseif($debtBalanceRUB < 0) status-negative @else status-neutral @endif">
-                <span class="status-indicator"></span>
-                ₽ @if($debtBalanceRUB > 0) لك @elseif($debtBalanceRUB < 0) عليك @else متعادل @endif
-            </span>
-            <span class="status-item @if($debtBalanceUSDT > 0) status-positive @elseif($debtBalanceUSDT < 0) status-negative @else status-neutral @endif">
-                <span class="status-indicator"></span>
-                USDT @if($debtBalanceUSDT > 0) لك @elseif($debtBalanceUSDT < 0) عليك @else متعادل @endif
-            </span>
-        </div>
-    </div>
-    <div class="card-shine"></div>
-</div>
-
-                <!-- Safekeeping Card (Blue) -->
-                <div class="summary-card card-safekeeping">
-                    <div class="card-icon-wrapper card-icon-blue">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0110 0v4"/>
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <div class="summary-label">الأمانات (محفوظ عندي)</div>
-                        <div class="currency-row">
-                            <div class="currency-amount">
-                                <span class="currency-symbol">₽</span>
-                                <span class="summary-amount">{{ number_format($totalSafekeepingRUB, 2) }}</span>
-                            </div>
-                            <div class="currency-amount">
-                                <span class="currency-symbol usdt">USDT</span>
-                                <span class="summary-amount">{{ number_format($totalSafekeepingUSDT, 2) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-shine"></div>
                 </div> --}}
-
-                <!-- Debt Balance Cards (Side by Side) -->
-<div class="summary-grid">
-    <!-- RUB Balance Card -->
-    <div class="summary-card @if($debtBalanceRUB > 0) card-owed-to-me @elseif($debtBalanceRUB < 0) card-owed-by-me @else card-expenses @endif">
-        <div class="card-icon-wrapper @if($debtBalanceRUB > 0) card-icon-green @elseif($debtBalanceRUB < 0) card-icon-red @else card-icon-gray @endif">
-            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 6v6l4 2"/>
-            </svg>
-        </div>
-        <div class="card-content">
-            <div class="summary-label">الرصيد ₽</div>
-            <div class="summary-amount @if($debtBalanceRUB > 0) amount-positive @elseif($debtBalanceRUB < 0) amount-negative @else amount-neutral @endif">
-                {{ $debtBalanceRUB > 0 ? '+' : '' }}{{ number_format($debtBalanceRUB, 2) }}
-            </div>
-            <div class="balance-status-mini @if($debtBalanceRUB > 0) status-positive @elseif($debtBalanceRUB < 0) status-negative @else status-neutral @endif">
-                <span class="status-indicator"></span>
-                @if($debtBalanceRUB > 0) لك @elseif($debtBalanceRUB < 0) عليك @else متعادل @endif
-            </div>
-        </div>
-        <div class="card-shine"></div>
-    </div>
-
-    <!-- USDT Balance Card -->
-    <div class="summary-card @if($debtBalanceUSDT > 0) card-owed-to-me @elseif($debtBalanceUSDT < 0) card-owed-by-me @else card-expenses @endif">
-        <div class="card-icon-wrapper @if($debtBalanceUSDT > 0) card-icon-green @elseif($debtBalanceUSDT < 0) card-icon-red @else card-icon-gray @endif">
-            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 6v6l4 2"/>
-            </svg>
-        </div>
-        <div class="card-content">
-            <div class="summary-label">الرصيد USDT</div>
-            <div class="summary-amount @if($debtBalanceUSDT > 0) amount-positive @elseif($debtBalanceUSDT < 0) amount-negative @else amount-neutral @endif">
-                {{ $debtBalanceUSDT > 0 ? '+' : '' }}{{ number_format($debtBalanceUSDT, 2) }}
-            </div>
-            <div class="balance-status-mini @if($debtBalanceUSDT > 0) status-positive @elseif($debtBalanceUSDT < 0) status-negative @else status-neutral @endif">
-                <span class="status-indicator"></span>
-                @if($debtBalanceUSDT > 0) لك @elseif($debtBalanceUSDT < 0) عليك @else متعادل @endif
-            </div>
-        </div>
-        <div class="card-shine"></div>
-    </div>
-</div>
-
-
-
-<!-- Safekeeping Cards (Side by Side) -->
-<div class="summary-grid">
-    <!-- RUB Safekeeping -->
-    <div class="summary-card card-safekeeping">
-        <div class="card-icon-wrapper card-icon-blue">
-            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
-        </div>
-        <div class="card-content">
-            <div class="summary-label">الأمانات ₽</div>
-            <div class="summary-amount">{{ number_format($totalSafekeepingRUB, 2) }}</div>
-        </div>
-        <div class="card-shine"></div>
-    </div>
-
-    <!-- USDT Safekeeping -->
-    <div class="summary-card card-safekeeping">
-        <div class="card-icon-wrapper card-icon-blue">
-            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
-        </div>
-        <div class="card-content">
-            <div class="summary-label">الأمانات USDT</div>
-            <div class="summary-amount">{{ number_format($totalSafekeepingUSDT, 2) }}</div>
-        </div>
-        <div class="card-shine"></div>
-    </div>
-</div>
-
-
-
-                <!-- Expenses Card (Gray/Purple) -->
-                <div class="summary-card card-expenses">
-                    <div class="card-icon-wrapper card-icon-gray">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                            <polyline points="17 8 12 3 7 8"/>
-                            <line x1="12" y1="3" x2="12" y2="15"/>
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <div class="summary-label">إجمالي المصاريف</div>
-                        <div class="currency-row">
-                            <div class="currency-amount">
-                                <span class="currency-symbol">₽</span>
-                                <span class="summary-amount">{{ number_format($totalExpensesRUB, 2) }}</span>
+                
+                    {{-- <div class="summary-grid">
+                        <!-- RUB Balance Card -->
+                        <div class="summary-card @if($debtBalanceRUB > 0) card-owed-to-me @elseif($debtBalanceRUB < 0) card-owed-by-me @else card-expenses @endif">
+                            <div class="card-icon-wrapper @if($debtBalanceRUB > 0) card-icon-green @elseif($debtBalanceRUB < 0) card-icon-red @else card-icon-gray @endif">
+                                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
                             </div>
-                            <div class="currency-amount">
-                                <span class="currency-symbol usdt">USDT</span>
-                                <span class="summary-amount">{{ number_format($totalExpensesUSDT, 2) }}</span>
+                            <div class="card-content">
+                                <div class="summary-label">الرصيد ₽</div>
+                                <div class="summary-amount @if($debtBalanceRUB > 0) amount-positive @elseif($debtBalanceRUB < 0) amount-negative @else amount-neutral @endif">
+                                    {{ $debtBalanceRUB > 0 ? '+' : '' }}{{ number_format($debtBalanceRUB, 2) }}
+                                </div>
+                                <div class="balance-status-mini @if($debtBalanceRUB > 0) status-positive @elseif($debtBalanceRUB < 0) status-negative @else status-neutral @endif">
+                                    <span class="status-indicator"></span>
+                                    @if($debtBalanceRUB > 0) لك @elseif($debtBalanceRUB < 0) عليك @else متعادل @endif
+                                </div>
+                            </div>
+                            <div class="card-shine"></div>
+                        </div>
+
+                        <!-- USDT Balance Card -->
+                        <div class="summary-card @if($debtBalanceUSDT > 0) card-owed-to-me @elseif($debtBalanceUSDT < 0) card-owed-by-me @else card-expenses @endif">
+                            <div class="card-icon-wrapper @if($debtBalanceUSDT > 0) card-icon-green @elseif($debtBalanceUSDT < 0) card-icon-red @else card-icon-gray @endif">
+                                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                            </div>
+                            <div class="card-content">
+                                <div class="summary-label">الرصيد USDT</div>
+                                <div class="summary-amount @if($debtBalanceUSDT > 0) amount-positive @elseif($debtBalanceUSDT < 0) amount-negative @else amount-neutral @endif">
+                                    {{ $debtBalanceUSDT > 0 ? '+' : '' }}{{ number_format($debtBalanceUSDT, 2) }}
+                                </div>
+                                <div class="balance-status-mini @if($debtBalanceUSDT > 0) status-positive @elseif($debtBalanceUSDT < 0) status-negative @else status-neutral @endif">
+                                    <span class="status-indicator"></span>
+                                    @if($debtBalanceUSDT > 0) لك @elseif($debtBalanceUSDT < 0) عليك @else متعادل @endif
+                                </div>
+                            </div>
+                            <div class="card-shine"></div>
+                        </div>
+                    </div> --}}
+
+
+
+                    <!-- Safekeeping Cards (Side by Side) -->
+                    {{-- <div class="summary-grid">
+                        <!-- RUB Safekeeping -->
+                        <div class="summary-card card-safekeeping">
+                            <div class="card-icon-wrapper card-icon-blue">
+                                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                                </svg>
+                            </div>
+                            <div class="card-content">
+                                <div class="summary-label">الأمانات ₽</div>
+                                <div class="summary-amount">{{ number_format($totalSafekeepingRUB, 2) }}</div>
+                            </div>
+                            <div class="card-shine"></div>
+                        </div>
+
+                        <!-- USDT Safekeeping -->
+                        <div class="summary-card card-safekeeping">
+                            <div class="card-icon-wrapper card-icon-blue">
+                                <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                                </svg>
+                            </div>
+                            <div class="card-content">
+                                <div class="summary-label">الأمانات USDT</div>
+                                <div class="summary-amount">{{ number_format($totalSafekeepingUSDT, 2) }}</div>
+                            </div>
+                            <div class="card-shine"></div>
+                        </div>
+                    </div> --}}
+
+
+
+                    <!-- Expenses Card (Gray/Purple) -->
+                    {{-- <div class="summary-card card-expenses">
+                        <div class="card-icon-wrapper card-icon-gray">
+                            <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="card-content">
+                            <div class="summary-label">إجمالي المصاريف</div>
+                            <div class="currency-row">
+                                <div class="currency-amount">
+                                    <span class="currency-symbol">₽</span>
+                                    <span class="summary-amount">{{ number_format($totalExpensesRUB, 2) }}</span>
+                                </div>
+                                <div class="currency-amount">
+                                    <span class="currency-symbol usdt">USDT</span>
+                                    <span class="summary-amount">{{ number_format($totalExpensesUSDT, 2) }}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-shine"></div>
+                        <div class="card-shine"></div>
+                    </div> --}}
                 </div>
-            </div>
 
             <!-- Main Content Card with Tabs -->
             <div class="main-card glass-card" x-data="{ tab: '{{ $activeTab ?? 'owedByMe' }}' }">
@@ -324,7 +418,7 @@
                 </div>
 
                 <!-- Forms Section -->
-                <div class="form-container">
+                {{-- <div class="form-container">
                     <!-- Debt Form (Owed By Me) -->
                     <form x-show="tab === 'owedByMe'" x-cloak method="POST" action="{{ route('debt.store') }}" class="entry-form">
                         @csrf
@@ -350,6 +444,7 @@
                                 <select name="currency" required class="currency-selector">
                                     <option value="RUB">₽ روبل</option>
                                     <option value="USDT">USDT</option>
+                                    <option value="LYD">LD دينار ليبي</option>
                                 </select>
                                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"/>
@@ -390,6 +485,7 @@
                                 <select name="currency" required class="currency-selector">
                                     <option value="RUB">₽ روبل</option>
                                     <option value="USDT">USDT</option>
+                                    <option value="LYD">LD دينار ليبي</option>
                                 </select>
                                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"/>
@@ -429,6 +525,7 @@
                                 <select name="currency" required class="currency-selector">
                                     <option value="RUB">₽ روبل</option>
                                     <option value="USDT">USDT</option>
+                                    <option value="LYD">LD دينار ليبي</option>
                                 </select>
                                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"/>
@@ -459,6 +556,7 @@
                                 <select name="currency" required class="currency-selector">
                                     <option value="RUB">₽ روبل</option>
                                     <option value="USDT">USDT</option>
+                                    <option value="LYD">LD دينار ليبي</option>
                                 </select>
                                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="6 9 12 15 18 9"/>
@@ -473,13 +571,201 @@
                             </button>
                         </div>
                     </form>
-                </div>
+                </div> --}}
+
+                <!-- Forms Section -->
+<div class="form-container">
+    <!-- Debt Form (Owed By Me) -->
+    <form x-show="tab === 'owedByMe'" x-cloak method="POST" action="{{ route('debt.store') }}" class="entry-form">
+        @csrf
+        <input type="hidden" name="type" value="owed_by_me">
+        <div class="form-row">
+            <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input type="text" name="person_name" placeholder="اسم الشخص" required class="form-input">
+            </div>
+        </div>
+        <div class="form-row form-row-inline">
+            <div class="input-wrapper flex-grow">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <input type="number" name="amount" step="0.01" placeholder="المبلغ" required class="form-input">
+            </div>
+            <div class="select-wrapper">
+                <select name="currency" required class="currency-selector">
+                    @foreach($enabledCurrencies as $currency)
+                        @php
+                            $currencyOptions = [
+                                'RUB' => '₽ روبل',
+                                'USDT' => 'USDT',
+                                'LYD' => 'LD دينار ليبي'
+                            ];
+                            $label = $currencyOptions[$currency] ?? $currency;
+                        @endphp
+                        <option value="{{ $currency }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </div>
+            <button type="submit" class="btn btn-submit btn-red">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>إضافة</span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Debt Form (Owed To Me) -->
+    <form x-show="tab === 'owedToMe'" x-cloak method="POST" action="{{ route('debt.store') }}" class="entry-form">
+        @csrf
+        <input type="hidden" name="type" value="owed_to_me">
+        <div class="form-row">
+            <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input type="text" name="person_name" placeholder="اسم الشخص" required class="form-input">
+            </div>
+        </div>
+        <div class="form-row form-row-inline">
+            <div class="input-wrapper flex-grow">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <input type="number" name="amount" step="0.01" placeholder="المبلغ" required class="form-input">
+            </div>
+            <div class="select-wrapper">
+                <select name="currency" required class="currency-selector">
+                    @foreach($enabledCurrencies as $currency)
+                        @php
+                            $currencyOptions = [
+                                'RUB' => '₽ روبل',
+                                'USDT' => 'USDT',
+                                'LYD' => 'LD دينار ليبي'
+                            ];
+                            $label = $currencyOptions[$currency] ?? $currency;
+                        @endphp
+                        <option value="{{ $currency }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </div>
+            <button type="submit" class="btn btn-submit btn-green">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>إضافة</span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Safekeeping Form -->
+    <form x-show="tab === 'safekeeping'" x-cloak method="POST" action="{{ route('safekeeping.store') }}" class="entry-form">
+        @csrf
+        <div class="form-row">
+            <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input type="text" name="person_name" placeholder="اسم الشخص" required class="form-input">
+            </div>
+        </div>
+        <div class="form-row form-row-inline">
+            <div class="input-wrapper flex-grow">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <input type="number" name="amount" step="0.01" placeholder="المبلغ" required class="form-input">
+            </div>
+            <div class="select-wrapper">
+                <select name="currency" required class="currency-selector">
+                    @foreach($enabledCurrencies as $currency)
+                        @php
+                            $currencyOptions = [
+                                'RUB' => '₽ روبل',
+                                'USDT' => 'USDT',
+                                'LYD' => 'LD دينار ليبي'
+                            ];
+                            $label = $currencyOptions[$currency] ?? $currency;
+                        @endphp
+                        <option value="{{ $currency }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </div>
+            <button type="submit" class="btn btn-submit btn-blue">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>إضافة</span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Expense Form -->
+    <form x-show="tab === 'expenses'" x-cloak method="POST" action="{{ route('expense.store') }}" class="entry-form">
+        @csrf
+        <div class="form-row form-row-inline">
+            <div class="input-wrapper flex-grow">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <input type="number" name="amount" step="0.01" placeholder="المبلغ" required class="form-input">
+            </div>
+            <div class="select-wrapper">
+                <select name="currency" required class="currency-selector">
+                    @foreach($enabledCurrencies as $currency)
+                        @php
+                            $currencyOptions = [
+                                'RUB' => '₽ روبل',
+                                'USDT' => 'USDT',
+                                'LYD' => 'LD دينار ليبي'
+                            ];
+                            $label = $currencyOptions[$currency] ?? $currency;
+                        @endphp
+                        <option value="{{ $currency }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </div>
+            <button type="submit" class="btn btn-submit btn-gray">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>إضافة</span>
+            </button>
+        </div>
+    </form>
+</div>
 
                 <!-- Lists Section -->
                 <div class="list-container">
                     
                     <!-- Owed By Me List -->
-                    <div x-show="tab === 'owedByMe'" x-cloak>
+                    {{-- <div x-show="tab === 'owedByMe'" x-cloak>
                         <div class="two-column-grid">
                             <!-- RUB Column -->
                             <div class="currency-column">
@@ -560,6 +846,7 @@
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $debt->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
                                                         <option value="USDT" {{ $debt->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                        <option value="LYD" {{ $debt->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -663,6 +950,7 @@
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $debt->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
                                                         <option value="USDT" {{ $debt->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                        <option value="LYD" {{ $debt->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -687,10 +975,134 @@
                                 @endif
                             </div>
                         </div>
+                    </div> --}}
+
+
+                    <div x-show="tab === 'owedByMe'" x-cloak>
+                        <div class="two-column-grid">
+                            @foreach($enabledCurrencies as $currency)
+                                @php
+                                    // Get currency-specific data
+                                    $currencyDebts = $owedByMe->where('currency', $currency);
+                                    
+                                    // Currency display info
+                                    $currencyInfo = [
+                                        'RUB' => ['symbol' => '₽', 'name' => 'الروبل', 'class' => 'column-header-rub'],
+                                        'USDT' => ['symbol' => '₮', 'name' => 'USDT', 'class' => 'column-header-usdt'],
+                                        'LYD' => ['symbol' => 'LD', 'name' => 'دينار ليبي', 'class' => 'column-header-lyd']
+                                    ];
+                                    
+                                    $info = $currencyInfo[$currency] ?? ['symbol' => $currency, 'name' => $currency, 'class' => 'column-header-rub'];
+                                @endphp
+                                
+                                <div class="currency-column">
+                                    <div class="column-header {{ $info['class'] }}">
+                                        <span class="column-currency-icon">{{ $info['symbol'] }}</span>
+                                        <span>{{ $info['name'] }}</span>
+                                    </div>
+                                    
+                                    @if($currencyDebts->isEmpty())
+                                        <div class="list-empty">
+                                            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                                                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                                            </svg>
+                                            <span>لا توجد سجلات</span>
+                                        </div>
+                                    @else
+                                        <div class="list-items">
+                                            @foreach($currencyDebts as $debt)
+                                            <div class="item-card" x-data="{ editing: false }">
+                                                <div x-show="!editing" class="item-view">
+                                                    <div class="item-header">
+                                                        <div class="item-content">
+                                                            <div class="item-person">
+                                                                <div class="person-avatar">{{ mb_substr($debt->person_name, 0, 1) }}</div>
+                                                                <span class="item-person-name">{{ $debt->person_name }}</span>
+                                                            </div>
+                                                            <div class="item-amount">{{ number_format($debt->amount, 2) }} <span class="amount-currency">{{ $info['symbol'] }}</span></div>
+                                                        </div>
+                                                        <div class="item-actions">
+                                                            <button @click="editing = true" class="btn-action btn-action-edit" title="تعديل">
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                                                </svg>
+                                                            </button>
+                                                            <form method="POST" action="{{ route('debt.delete', $debt->id) }}" class="inline-form">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn-action btn-action-delete" title="حذف">
+                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                        <polyline points="3 6 5 6 21 6"/>
+                                                                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                                                    </svg>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                    <div class="item-datetime">
+                                                        <span class="datetime-item">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                                                <line x1="3" y1="10" x2="21" y2="10"/>
+                                                            </svg>
+                                                            {{ $debt->created_at->format('Y/m/d') }}
+                                                        </span>
+                                                        <span class="datetime-item">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <circle cx="12" cy="12" r="10"/>
+                                                                <polyline points="12 6 12 12 16 14"/>
+                                                            </svg>
+                                                            {{ $debt->created_at->format('H:i') }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <form x-show="editing" x-cloak method="POST" action="{{ route('debt.update', $debt->id) }}" class="edit-form">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <div class="input-wrapper">
+                                                        <input type="text" name="person_name" value="{{ $debt->person_name }}" required class="form-input">
+                                                    </div>
+                                                    <div class="input-wrapper">
+                                                        <input type="number" name="amount" step="0.01" value="{{ $debt->amount }}" required class="form-input">
+                                                    </div>
+                                                    <div class="select-wrapper">
+                                                        <select name="currency" required class="currency-selector">
+                                                            <option value="RUB" {{ $debt->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
+                                                            <option value="USDT" {{ $debt->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                            <option value="LYD" {{ $debt->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="edit-actions">
+                                                        <button type="submit" class="btn btn-small btn-green">
+                                                            <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <polyline points="20 6 9 17 4 12"/>
+                                                            </svg>
+                                                            حفظ
+                                                        </button>
+                                                        <button type="button" @click="editing = false" class="btn btn-small btn-gray">
+                                                            <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                                            </svg>
+                                                            إلغاء
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
 
                     <!-- Owed To Me List -->
-                    <div x-show="tab === 'owedToMe'" x-cloak>
+                    {{-- <div x-show="tab === 'owedToMe'" x-cloak>
                         <div class="two-column-grid">
                             <!-- RUB Column -->
                             <div class="currency-column">
@@ -771,6 +1183,7 @@
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $debt->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
                                                         <option value="USDT" {{ $debt->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                        <option value="LYD" {{ $debt->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -874,6 +1287,7 @@
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $debt->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
                                                         <option value="USDT" {{ $debt->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                        <option value="LYD" {{ $debt->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -898,10 +1312,133 @@
                                 @endif
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
+
+                                                <div x-show="tab === 'owedToMe'" x-cloak>
+                                <div class="two-column-grid">
+                                    @foreach($enabledCurrencies as $currency)
+                                        @php
+                                            // Get currency-specific data
+                                            $currencyDebts = $owedToMe->where('currency', $currency);
+                                            
+                                            // Currency display info
+                                            $currencyInfo = [
+                                                'RUB' => ['symbol' => '₽', 'name' => 'الروبل', 'class' => 'column-header-rub'],
+                                                'USDT' => ['symbol' => '₮', 'name' => 'USDT', 'class' => 'column-header-usdt'],
+                                                'LYD' => ['symbol' => 'LD', 'name' => 'دينار ليبي', 'class' => 'column-header-lyd']
+                                            ];
+                                            
+                                            $info = $currencyInfo[$currency] ?? ['symbol' => $currency, 'name' => $currency, 'class' => 'column-header-rub'];
+                                        @endphp
+                                        
+                                        <div class="currency-column">
+                                            <div class="column-header {{ $info['class'] }}">
+                                                <span class="column-currency-icon">{{ $info['symbol'] }}</span>
+                                                <span>{{ $info['name'] }}</span>
+                                            </div>
+                                            
+                                            @if($currencyDebts->isEmpty())
+                                                <div class="list-empty">
+                                                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                                                        <rect x="9" y="3" width="6" height="4" rx="1"/>
+                                                    </svg>
+                                                    <span>لا توجد سجلات</span>
+                                                </div>
+                                            @else
+                                                <div class="list-items">
+                                                    @foreach($currencyDebts as $debt)
+                                                    <div class="item-card" x-data="{ editing: false }">
+                                                        <div x-show="!editing" class="item-view">
+                                                            <div class="item-header">
+                                                                <div class="item-content">
+                                                                    <div class="item-person">
+                                                                        <div class="person-avatar">{{ mb_substr($debt->person_name, 0, 1) }}</div>
+                                                                        <span class="item-person-name">{{ $debt->person_name }}</span>
+                                                                    </div>
+                                                                    <div class="item-amount">{{ number_format($debt->amount, 2) }} <span class="amount-currency">{{ $info['symbol'] }}</span></div>
+                                                                </div>
+                                                                <div class="item-actions">
+                                                                    <button @click="editing = true" class="btn-action btn-action-edit" title="تعديل">
+                                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                                                            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                                                        </svg>
+                                                                    </button>
+                                                                    <form method="POST" action="{{ route('debt.delete', $debt->id) }}" class="inline-form">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn-action btn-action-delete" title="حذف">
+                                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                                <polyline points="3 6 5 6 21 6"/>
+                                                                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                                                            </svg>
+                                                                        </button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                            <div class="item-datetime">
+                                                                <span class="datetime-item">
+                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                                                        <line x1="16" y1="2" x2="16" y2="6"/>
+                                                                        <line x1="8" y1="2" x2="8" y2="6"/>
+                                                                        <line x1="3" y1="10" x2="21" y2="10"/>
+                                                                    </svg>
+                                                                    {{ $debt->created_at->format('Y/m/d') }}
+                                                                </span>
+                                                                <span class="datetime-item">
+                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                        <circle cx="12" cy="12" r="10"/>
+                                                                        <polyline points="12 6 12 12 16 14"/>
+                                                                    </svg>
+                                                                    {{ $debt->created_at->format('H:i') }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <form x-show="editing" x-cloak method="POST" action="{{ route('debt.update', $debt->id) }}" class="edit-form">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <div class="input-wrapper">
+                                                                <input type="text" name="person_name" value="{{ $debt->person_name }}" required class="form-input">
+                                                            </div>
+                                                            <div class="input-wrapper">
+                                                                <input type="number" name="amount" step="0.01" value="{{ $debt->amount }}" required class="form-input">
+                                                            </div>
+                                                            <div class="select-wrapper">
+                                                                <select name="currency" required class="currency-selector">
+                                                                    <option value="RUB" {{ $debt->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
+                                                                    <option value="USDT" {{ $debt->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                                    <option value="LYD" {{ $debt->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="edit-actions">
+                                                                <button type="submit" class="btn btn-small btn-green">
+                                                                    <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                        <polyline points="20 6 9 17 4 12"/>
+                                                                    </svg>
+                                                                    حفظ
+                                                                </button>
+                                                                <button type="button" @click="editing = false" class="btn btn-small btn-gray">
+                                                                    <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                                                    </svg>
+                                                                    إلغاء
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
 
                     <!-- Safekeeping List -->
-                    <div x-show="tab === 'safekeeping'" x-cloak>
+                    {{-- <div x-show="tab === 'safekeeping'" x-cloak>
                         <div class="two-column-grid">
                             <!-- RUB Column -->
                             <div class="currency-column">
@@ -982,6 +1519,7 @@
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $safe->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
                                                         <option value="USDT" {{ $safe->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                        <option value="LYD" {{ $safe->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -1085,6 +1623,7 @@
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $safe->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
                                                         <option value="USDT" {{ $safe->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                        <option value="LYD" {{ $safe->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -1109,10 +1648,132 @@
                                 @endif
                             </div>
                         </div>
+                    </div> --}}
+                    <div x-show="tab === 'safekeeping'" x-cloak>
+    <div class="two-column-grid">
+        @foreach($enabledCurrencies as $currency)
+            @php
+                // Get currency-specific data
+                $currencySafe = $safekeeping->where('currency', $currency);
+                
+                // Currency display info
+                $currencyInfo = [
+                    'RUB' => ['symbol' => '₽', 'name' => 'الروبل', 'class' => 'column-header-rub'],
+                    'USDT' => ['symbol' => '₮', 'name' => 'USDT', 'class' => 'column-header-usdt'],
+                    'LYD' => ['symbol' => 'LD', 'name' => 'دينار ليبي', 'class' => 'column-header-lyd']
+                ];
+                
+                $info = $currencyInfo[$currency] ?? ['symbol' => $currency, 'name' => $currency, 'class' => 'column-header-rub'];
+            @endphp
+            
+            <div class="currency-column">
+                <div class="column-header {{ $info['class'] }}">
+                    <span class="column-currency-icon">{{ $info['symbol'] }}</span>
+                    <span>{{ $info['name'] }}</span>
+                </div>
+                
+                @if($currencySafe->isEmpty())
+                    <div class="list-empty">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                            <rect x="9" y="3" width="6" height="4" rx="1"/>
+                        </svg>
+                        <span>لا توجد سجلات</span>
                     </div>
+                @else
+                    <div class="list-items">
+                        @foreach($currencySafe as $safe)
+                        <div class="item-card" x-data="{ editing: false }">
+                            <div x-show="!editing" class="item-view">
+                                <div class="item-header">
+                                    <div class="item-content">
+                                        <div class="item-person">
+                                            <div class="person-avatar">{{ mb_substr($safe->person_name, 0, 1) }}</div>
+                                            <span class="item-person-name">{{ $safe->person_name }}</span>
+                                        </div>
+                                        <div class="item-amount">{{ number_format($safe->amount, 2) }} <span class="amount-currency">{{ $info['symbol'] }}</span></div>
+                                    </div>
+                                    <div class="item-actions">
+                                        <button @click="editing = true" class="btn-action btn-action-edit" title="تعديل">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        </button>
+                                        <form method="POST" action="{{ route('safekeeping.delete', $safe->id) }}" class="inline-form">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-action btn-action-delete" title="حذف">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="3 6 5 6 21 6"/>
+                                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div class="item-datetime">
+                                    <span class="datetime-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        {{ $safe->created_at->format('Y/m/d') }}
+                                    </span>
+                                    <span class="datetime-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                        {{ $safe->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <form x-show="editing" x-cloak method="POST" action="{{ route('safekeeping.update', $safe->id) }}" class="edit-form">
+                                @csrf
+                                @method('PUT')
+                                <div class="input-wrapper">
+                                    <input type="text" name="person_name" value="{{ $safe->person_name }}" required class="form-input">
+                                </div>
+                                <div class="input-wrapper">
+                                    <input type="number" name="amount" step="0.01" value="{{ $safe->amount }}" required class="form-input">
+                                </div>
+                                <div class="select-wrapper">
+                                    <select name="currency" required class="currency-selector">
+                                        <option value="RUB" {{ $safe->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
+                                        <option value="USDT" {{ $safe->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                        <option value="LYD" {{ $safe->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
+                                    </select>
+                                </div>
+                                <div class="edit-actions">
+                                    <button type="submit" class="btn btn-small btn-green">
+                                        <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                        حفظ
+                                    </button>
+                                    <button type="button" @click="editing = false" class="btn btn-small btn-gray">
+                                        <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                        إلغاء
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        @endforeach
+    </div>
+</div>
 
                     <!-- Expenses List -->
-                    <div x-show="tab === 'expenses'" x-cloak>
+                    {{-- <div x-show="tab === 'expenses'" x-cloak>
                         <div class="two-column-grid">
                             <!-- RUB Column -->
                             <div class="currency-column">
@@ -1186,6 +1847,7 @@
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $expense->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
                                                         <option value="USDT" {{ $expense->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                        <option value="LYD" {{ $expense->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -1281,7 +1943,8 @@
                                                 <div class="select-wrapper">
                                                     <select name="currency" required class="currency-selector">
                                                         <option value="RUB" {{ $expense->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
-                                                        <option value="USDT" {{ $expense->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                    <option value="USDT" {{ $expense->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                                    <option value="LYD" {{ $expense->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
                                                     </select>
                                                 </div>
                                                 <div class="edit-actions">
@@ -1306,7 +1969,123 @@
                                 @endif
                             </div>
                         </div>
+                    </div> --}}
+
+                    <div x-show="tab === 'expenses'" x-cloak>
+    <div class="two-column-grid">
+        @foreach($enabledCurrencies as $currency)
+            @php
+                // Get currency-specific data
+                $currencyExp = $expenses->where('currency', $currency);
+                
+                // Currency display info
+                $currencyInfo = [
+                    'RUB' => ['symbol' => '₽', 'name' => 'الروبل', 'class' => 'column-header-rub'],
+                    'USDT' => ['symbol' => '₮', 'name' => 'USDT', 'class' => 'column-header-usdt'],
+                    'LYD' => ['symbol' => 'LD', 'name' => 'دينار ليبي', 'class' => 'column-header-lyd']
+                ];
+                
+                $info = $currencyInfo[$currency] ?? ['symbol' => $currency, 'name' => $currency, 'class' => 'column-header-rub'];
+            @endphp
+            
+            <div class="currency-column">
+                <div class="column-header {{ $info['class'] }}">
+                    <span class="column-currency-icon">{{ $info['symbol'] }}</span>
+                    <span>{{ $info['name'] }}</span>
+                </div>
+                
+                @if($currencyExp->isEmpty())
+                    <div class="list-empty">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                            <rect x="9" y="3" width="6" height="4" rx="1"/>
+                        </svg>
+                        <span>لا توجد سجلات</span>
                     </div>
+                @else
+                    <div class="list-items">
+                        @foreach($currencyExp as $expense)
+                        <div class="item-card" x-data="{ editing: false }">
+                            <div x-show="!editing" class="item-view">
+                                <div class="item-header">
+                                    <div class="item-content">
+                                        <div class="item-amount expense-amount">{{ number_format($expense->amount, 2) }} <span class="amount-currency">{{ $info['symbol'] }}</span></div>
+                                    </div>
+                                    <div class="item-actions">
+                                        <button @click="editing = true" class="btn-action btn-action-edit" title="تعديل">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        </button>
+                                        <form method="POST" action="{{ route('expense.delete', $expense->id) }}" class="inline-form">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-action btn-action-delete" title="حذف">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="3 6 5 6 21 6"/>
+                                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <div class="item-datetime">
+                                    <span class="datetime-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                        {{ $expense->created_at->format('Y/m/d') }}
+                                    </span>
+                                    <span class="datetime-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                        {{ $expense->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <form x-show="editing" x-cloak method="POST" action="{{ route('expense.update', $expense->id) }}" class="edit-form">
+                                @csrf
+                                @method('PUT')
+                                <div class="input-wrapper">
+                                    <input type="number" name="amount" step="0.01" value="{{ $expense->amount }}" required class="form-input">
+                                </div>
+                                <div class="select-wrapper">
+                                    <select name="currency" required class="currency-selector">
+                                        <option value="RUB" {{ $expense->currency == 'RUB' ? 'selected' : '' }}>₽ روبل</option>
+                                        <option value="USDT" {{ $expense->currency == 'USDT' ? 'selected' : '' }}>USDT</option>
+                                        <option value="LYD" {{ $expense->currency == 'LYD' ? 'selected' : '' }}>LD دينار ليبي</option>
+                                    </select>
+                                </div>
+                                <div class="edit-actions">
+                                    <button type="submit" class="btn btn-small btn-green">
+                                        <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                        حفظ
+                                    </button>
+                                    <button type="button" @click="editing = false" class="btn btn-small btn-gray">
+                                        <svg class="btn-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                        إلغاء
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        @endforeach
+    </div>
+</div>
 
                 </div>
             </div>

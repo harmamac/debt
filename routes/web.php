@@ -9,11 +9,10 @@ Route::get('/enter-code', function() {
 })->name('enter.code');
 
 Route::post('/verify-code', function(Illuminate\Http\Request $request) {
-    $code = $request->input('code');
-    
-    // Validate code format (6 digits)
+    $code = $request->input('code');    
     if (preg_match('/^\d{6}$/', $code)) {
         session(['user_code' => $code]);
+        $request->session()->save(); // ← ADD THIS LINE!
         return redirect()->route('home');
     }
     
